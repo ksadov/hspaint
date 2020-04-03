@@ -5,6 +5,8 @@ import Graphics.Gloss.Raster.Array
 import Data.Array.Repa as R
 import Data.Array.Repa.Eval as R.Eval
 import Codec.Picture as JP
+import Data.Vector.Storable as VS
+import GHC.Word
 import System.Exit
 
 data MouseState = MouseDown | MouseUp
@@ -86,7 +88,7 @@ fillLine (x1, y1) (x2, y2) w =
           let pointlst = Prelude.map
                              (\x -> (x, round (a * (fromIntegral x) + b)))
                              rangelst in
-                   (foldl makeMark w pointlst)
+                   (Prelude.foldl makeMark w pointlst)
       Left _ -> makeMark w (x1, y1)
   -- solve for x in terms of y
    else
@@ -96,7 +98,7 @@ fillLine (x1, y1) (x2, y2) w =
           let pointlst = Prelude.map
                               (\y -> (round (a * (fromIntegral y) + b), y))
                               rangelst in
-                 (foldl makeMark w pointlst)
+                 (Prelude.foldl makeMark w pointlst)
        Left _ -> makeMark w (x1, y1)
 
 -- |[lineCoefficients p1 p2] is [(a, b}] such that a * x + b = y is the equation
@@ -122,7 +124,7 @@ toRepa w =
 
 -- |Updates list of last 4 marks
 updateMarks :: (Int, Int) -> World -> World
-updateMarks pos w = w {last4marks = pos : (take 3 (last4marks w))}
+updateMarks pos w = w {last4marks = pos : (Prelude.take 3 (last4marks w))}
 
 handleEvent :: Event -> World -> IO World
 
@@ -158,20 +160,37 @@ handleEvent (EventKey (Char 'q') Down _ _) w =
 -- clear canvas
 handleEvent (EventKey (Char 'c') Down _ _) w =
   return (w {worldMap = zip [0..]
-              (replicate ((canvasWidth w)*(canvasHeight w)) (255, 255, 255))})
+              (Prelude.replicate ((canvasWidth w)*(canvasHeight w)) (255, 255, 255))})
 
 handleEvent _ w = return w
 
 step :: Float -> World -> IO World
 step _ w = return w
 
-main :: IO ()
-main =
-  let wd = 150 in
-  let ht = 100 in
+
+loadImg :: String -> IO (Int, Int, [(Int, Hue)])
+loadImg fname = do
+  readOut <- JP.readImage fname
+  case readOut of
+    Right di -> case (JP.convertRGB8 di) of
+      Image wd ht vec ->
+        let pixels = getPixels vec in
+          return (ht, wd, pixels)
+    Left _ -> print "invalid file" >> System.Exit.exitFailure
+
+getPixels :: VS.Vector GHC.Word.Word8 -> [(Int, Hue)]
+getPixels v =
+  let vlst = (VS.toList v) in
+    let pixlst lst = case lst of
+          r:g:b:t -> ((fromIntegral r, fromIntegral g, fromIntegral b):(pixlst t))
+          _ -> [] in
+      zip [0..] (pixlst vlst)
+
+beginDraw :: Int -> Int -> [(Int, Hue)] -> IO()
+beginDraw wd ht wm =
   let zm = 4 in
-  let startWorld =
-         World { worldMap = zip [0..] (replicate (wd*ht) (255, 255, 255)),
+    let startWorld =
+         World { worldMap = wm,
                      brush = Brush {sz = 2, col = (0, 0, 0)},
                      canvasHeight = ht,
                      canvasWidth = wd,
@@ -186,3 +205,19 @@ main =
   toRepa
   handleEvent
   step
+
+main :: IO ()
+main =
+  do
+    putStrLn "Load image? (y/n)"
+    resp <- getLine
+    if (resp == "y") then
+      do
+        putStrLn "Enter filename:"
+        fname <- getLine
+        (wd, ht, wm) <- loadImg fname
+        beginDraw wd ht wm
+      else
+      let wd = 150 in
+        let ht = 100 in
+          beginDraw wd ht (zip [0..] (Prelude.replicate (wd*ht) (255, 255, 255)))
