@@ -4,6 +4,7 @@ import Graphics.Gloss.Interface.Pure.Game
 import Graphics.Gloss.Raster.Array
 import Data.Array.Repa as R
 import Data.Array.Repa.Eval as R.Eval
+import Codec.Picture as JP
 import System.Exit
 
 data MouseState = MouseDown | MouseUp

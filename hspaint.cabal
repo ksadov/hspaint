@@ -24,3 +24,4 @@ executable hspaint
     , gloss-raster >= 1.13.1.1
     , gloss
     , repa
+    , JuicyPixels
