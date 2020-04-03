@@ -144,7 +144,6 @@ handleEvent (EventKey (MouseButton LeftButton) Up _ pos) w =
 
 -- draw if mouse is down
 handleEvent (EventMotion pos) w =
-  print (last4marks w) >>
   case (mouseState w) of
      MouseDown ->
        let nextspot = stroke pos w in
