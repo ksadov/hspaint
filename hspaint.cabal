@@ -25,4 +25,5 @@ executable hspaint
     , gloss
     , repa
     , JuicyPixels
+    , JuicyPixels-extra
     , vector

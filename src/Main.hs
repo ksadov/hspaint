@@ -5,6 +5,7 @@ import Graphics.Gloss.Raster.Array
 import Data.Array.Repa as R
 import Data.Array.Repa.Eval as R.Eval
 import Codec.Picture as JP
+import Codec.Picture.Extra as JP.Extra
 import Data.Vector.Storable as VS
 import GHC.Word
 import System.Exit
@@ -28,11 +29,12 @@ data World = World { worldMap :: [(Int, Hue)],
 
 -- |[idxOfPix (x, y) w] is the [worldMap w] index corresponding to pixel (x, y)
 idxOfPix :: (Int, Int) -> World -> Int
-idxOfPix (x, y) w = y * (canvasWidth w) + x
+idxOfPix (x, y) w = ((canvasHeight w) - y) * (canvasWidth w) + x
 
 -- |[idxOfPix n w] is the pixel corresponding to [worldMap w] index n
 pixOfidx :: Int -> World -> (Int, Int)
-pixOfidx n w = let (y, x) = quotRem n (canvasWidth w) in (x, y)
+pixOfidx n w = let (flipy, x) = quotRem n (canvasWidth w) in
+  (x, (canvasHeight w) - flipy)
 
 -- |[makeMark w (x, y)] is a world with [worldMap w] updated to include a
 --   mark of color [col $ brush w] and width [sz $ brush w] at pixel (x, y)
@@ -51,7 +53,7 @@ makeMark w (x, y) =
 getPix :: Point -> World -> Either String (Int, Int)
 getPix (fx, fy) w =
   let x = quot (round fx) (zoom w) + (quot (canvasWidth w) 2) in
-    let y = quot (round fy) (zoom w) + (quot (canvasHeight w) 2) in
+    let y = quot (round (-1*fy)) (zoom w) + (quot (canvasHeight w) 2) in
       if (x > 0 && y > 0 && x < (canvasWidth w) && y < (canvasHeight w))
       then Right (x, y)
       else Left "Out of bounds"
@@ -142,6 +144,7 @@ handleEvent (EventKey (MouseButton LeftButton) Up _ pos) w =
 
 -- draw if mouse is down
 handleEvent (EventMotion pos) w =
+  print (last4marks w) >>
   case (mouseState w) of
      MouseDown ->
        let nextspot = stroke pos w in
@@ -172,7 +175,7 @@ loadImg :: String -> IO (Int, Int, [(Int, Hue)])
 loadImg fname = do
   readOut <- JP.readImage fname
   case readOut of
-    Right di -> case (JP.convertRGB8 di) of
+    Right di -> case (JP.Extra.flipVertically $ JP.convertRGB8 di) of
       Image wd ht vec ->
         let pixels = getPixels vec in
           return (ht, wd, pixels)
@@ -215,7 +218,7 @@ main =
       do
         putStrLn "Enter filename:"
         fname <- getLine
-        (wd, ht, wm) <- loadImg fname
+        (ht, wd, wm) <- loadImg fname
         beginDraw wd ht wm
       else
       let wd = 150 in
