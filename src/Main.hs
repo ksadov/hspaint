@@ -7,7 +7,7 @@ import Data.Array.Repa.Eval as R.Eval
 import Codec.Picture as JP
 import Codec.Picture.Extra as JP.Extra
 import Codec.Picture.Saving as JP.Save
-import Data.Vector.Storable as VS
+import qualified Data.Vector.Storable as VS
 import qualified Data.ByteString.Lazy as B
 import GHC.Word
 import System.Exit
@@ -20,13 +20,14 @@ data Brush =  Brush { sz :: Int,
 -- |(r, g, b)
 type Hue = (Int, Int, Int)
 
-data World = World { worldMap :: [(Int, Hue)],
-                     brush :: Brush,
+data World = World { worldMap     :: [(Int, Hue)],
+                     brush        :: Brush,
                      canvasHeight :: Int,
-                     canvasWidth :: Int,
-                     zoom :: Int,
-                     mouseState :: MouseState,
-                     last4marks :: [(Int, Int)]
+                     canvasWidth  :: Int,
+                     zoom         :: Int,
+                     mouseState   :: MouseState,
+                     last4marks   :: [(Int, Int)],
+                     filename     :: String
                    }
 
 -- |[idxOfPix (x, y) w] is the [worldMap w] index corresponding to pixel (x, y)
@@ -167,14 +168,16 @@ handleEvent (EventKey (Char 'c') Down _ _) w =
               (Prelude.replicate ((canvasWidth w)*(canvasHeight w)) (255, 255, 255))})
 
 -- save
-handleEvent (EventKey (Char 's') Down _ _) w = save w >> return w
+handleEvent (EventKey (Char 's') Down _ _) w =
+  save w >> putStrLn ("Saved image to " Prelude.++ (filename w)) >> return w
 
 handleEvent _ w = return w
 
 step :: Float -> World -> IO World
 step _ w = return w
 
-
+-- |[loadImg fname] returns [(ht, wd, wm)], where [ht], [wd] and [wm] are the
+--   height, width and pixel data of the image stored in [fname].
 loadImg :: String -> IO (Int, Int, [(Int, Hue)])
 loadImg fname = do
   readOut <- JP.readImage fname
@@ -183,7 +186,7 @@ loadImg fname = do
       Image wd ht vec ->
         let pixels = getPixels vec in
           return (ht, wd, pixels)
-    Left _ -> print "invalid file" >> System.Exit.exitFailure
+    Left _ -> putStrLn "invalid file" >> System.Exit.exitFailure
 
 -- |[getPixels v] converts a vector containing JuicyPixels image data to
 --   a worldmap.
@@ -211,10 +214,12 @@ save w =
   let i = JP.Image (canvasWidth w) (canvasHeight w) (hueToPixel $ worldMap w) in
     let di = ImageRGB8 i in
       let out = JP.Save.imageToPng di in
-      B.writeFile "testsave.png" out
+      B.writeFile (filename w) out
 
-beginDraw :: Int -> Int -> [(Int, Hue)] -> IO()
-beginDraw wd ht wm =
+-- |[beginDraw wd ht wm fname] starts the drawing program with a canvas of
+--   width [wd], height [ht], worldmap [w] and filename [fname].
+beginDraw :: Int -> Int -> [(Int, Hue)] -> String -> IO()
+beginDraw wd ht wm fname =
   let zm = 4 in
     let startWorld =
          World { worldMap = wm,
@@ -223,7 +228,8 @@ beginDraw wd ht wm =
                      canvasWidth = wd,
                      zoom = zm,
                      mouseState = MouseUp,
-                     last4marks = [] } in
+                     last4marks = [],
+                     filename = fname } in
   playArrayIO
   FullScreen
   (zm, zm)
@@ -236,15 +242,19 @@ beginDraw wd ht wm =
 main :: IO ()
 main =
   do
-    putStrLn "Load image? (y/n)"
+    putStrLn "Load existing image? (y/n)"
     resp <- getLine
-    if (resp == "y") then
+    putStrLn "Enter filename:"
+    fname <- getLine
+    if (head resp == 'y') then
       do
-        putStrLn "Enter filename:"
-        fname <- getLine
         (ht, wd, wm) <- loadImg fname
-        beginDraw wd ht wm
+        beginDraw wd ht wm fname
       else
-      let wd = 150 in
-        let ht = 100 in
-          beginDraw wd ht (zip [0..] (Prelude.replicate (wd*ht) (255, 255, 255)))
+        let wd = 150 in
+          let ht = 100 in
+            beginDraw
+            wd
+            ht
+            (zip [0..] (Prelude.replicate (wd*ht) (255, 255, 255)))
+            fname
