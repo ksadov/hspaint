@@ -27,3 +27,4 @@ executable hspaint
     , JuicyPixels
     , JuicyPixels-extra
     , vector
+    , bytestring

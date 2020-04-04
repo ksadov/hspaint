@@ -6,7 +6,9 @@ import Data.Array.Repa as R
 import Data.Array.Repa.Eval as R.Eval
 import Codec.Picture as JP
 import Codec.Picture.Extra as JP.Extra
+import Codec.Picture.Saving as JP.Save
 import Data.Vector.Storable as VS
+import qualified Data.ByteString.Lazy as B
 import GHC.Word
 import System.Exit
 
@@ -164,6 +166,9 @@ handleEvent (EventKey (Char 'c') Down _ _) w =
   return (w {worldMap = zip [0..]
               (Prelude.replicate ((canvasWidth w)*(canvasHeight w)) (255, 255, 255))})
 
+-- save
+handleEvent (EventKey (Char 's') Down _ _) w = save w >> return w
+
 handleEvent _ w = return w
 
 step :: Float -> World -> IO World
@@ -187,6 +192,21 @@ getPixels v =
           r:g:b:t -> ((fromIntegral r, fromIntegral g, fromIntegral b):(pixlst t))
           _ -> [] in
       zip [0..] (pixlst vlst)
+
+hueToPixel :: [(Int, Hue)] -> VS.Vector GHC.Word.Word8
+hueToPixel wm =
+  let stripped = Prelude.map snd wm in
+    let flattener (r, g, b) lst = r:g:b:lst in
+      let flattened = Prelude.foldr flattener [] stripped in
+        let wordlst = Prelude.map fromIntegral flattened :: [Word8] in
+        VS.fromList wordlst
+
+save :: World -> IO ()
+save w =
+  let i = JP.Image (canvasWidth w) (canvasHeight w) (hueToPixel $ worldMap w) in
+    let di = ImageRGB8 i in
+      let out = JP.Save.imageToPng di in
+      B.writeFile "testsave.png" out
 
 beginDraw :: Int -> Int -> [(Int, Hue)] -> IO()
 beginDraw wd ht wm =
