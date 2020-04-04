@@ -185,6 +185,8 @@ loadImg fname = do
           return (ht, wd, pixels)
     Left _ -> print "invalid file" >> System.Exit.exitFailure
 
+-- |[getPixels v] converts a vector containing JuicyPixels image data to
+--   a worldmap.
 getPixels :: VS.Vector GHC.Word.Word8 -> [(Int, Hue)]
 getPixels v =
   let vlst = (VS.toList v) in
@@ -193,6 +195,8 @@ getPixels v =
           _ -> [] in
       zip [0..] (pixlst vlst)
 
+-- |[hueToPixel wm] converts a worldmap to a vector used to make a JuicyPixels
+--   image.
 hueToPixel :: [(Int, Hue)] -> VS.Vector GHC.Word.Word8
 hueToPixel wm =
   let stripped = Prelude.map snd wm in
@@ -201,6 +205,7 @@ hueToPixel wm =
         let wordlst = Prelude.map fromIntegral flattened :: [Word8] in
         VS.fromList wordlst
 
+-- |[save w] writes the image represented by [w] to a file.
 save :: World -> IO ()
 save w =
   let i = JP.Image (canvasWidth w) (canvasHeight w) (hueToPixel $ worldMap w) in
