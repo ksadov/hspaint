@@ -15,7 +15,8 @@ import System.Exit
 data MouseState = MouseDown | MouseUp
 
 data Brush =  Brush { sz :: Int,
-                      col :: Hue }
+                      col :: Hue,
+                      dither :: (Int, Int) -> Bool}
 
 -- |(r, g, b)
 type Hue = (Int, Int, Int)
@@ -46,7 +47,7 @@ makeMark w (x, y) =
   let radius = quot (sz . brush $ w) 2 in
     let updateIdx (idx, colr) =
           let (x', y') = pixOfidx idx w in
-            if (((x-x')^2 + (y-y')^2) < radius^2)
+            if (((x-x')^2 + (y-y')^2) < radius^2 && (dither $ brush w) (x', y'))
             then (idx, col . brush $ w)
             else (idx, colr) in
       let newmap = Prelude.map updateIdx (worldMap w) in
@@ -154,6 +155,25 @@ handleEvent (EventMotion pos) w =
          return (connectStrokes nextspot)
      MouseUp -> return w
 
+-- dither patterns
+handleEvent (EventKey (Char num) Down (Modifiers Up Down Up) _) w =
+  let pattern =
+        case num of
+          '2' -> (\(x, y) -> (x + y) `mod` 2 == 0)
+          '3' -> (\(x, y) -> x `mod` 2 == 0)
+          '4' -> (\(x, y) -> (x - y) `mod` 4 == 0)
+          '5' -> (\(x, y) -> (x - y) `mod` 4 == 0 && (x + y) `mod` 4 == 0)
+          '6' -> (\(x, y) -> (x - y) `mod` 4 == 0 || (x + y) `mod` 4 == 0)
+          '7' -> (\(x, y) -> if y `mod` 2 == 0
+                             then x `mod` 4 == 0
+                             else (x + 2) `mod` 4 == 0)
+          '8' -> (\(x, y) -> y `mod` 2 == 0)
+          '9' -> (\(x,y) -> (x - y) `mod` 4 == 0 || (x - y + 1) `mod` 4 == 0)
+          '0' -> (\(x,y) -> (x - y) `mod` 3 == 0 || (x - y + 1) `mod` 4 == 0)
+          _ -> (\_ -> True)
+  in
+  return (w {brush = ((brush w) {dither = pattern})})
+
 -- increase brush size
 handleEvent (EventKey (Char 'w') Down _ _) w =
   return (w {brush = ((brush w) {sz = (sz $ brush w) + 2})})
@@ -211,7 +231,9 @@ hueToPixel wm =
 -- |[save w] writes the image represented by [w] to a file.
 save :: World -> IO ()
 save w =
-  let i = JP.Image (canvasWidth w) (canvasHeight w) (hueToPixel $ worldMap w) in
+  let i =
+        JP.Extra.flipVertically
+        (JP.Image (canvasWidth w) (canvasHeight w) (hueToPixel $ worldMap w)) in
     let di = ImageRGB8 i in
       let out = JP.Save.imageToPng di in
       B.writeFile (filename w) out
@@ -223,7 +245,9 @@ beginDraw wd ht wm fname =
   let zm = 4 in
     let startWorld =
          World { worldMap = wm,
-                     brush = Brush {sz = 2, col = (0, 0, 0)},
+                     brush = Brush {sz = 2,
+                                    col = (0, 0, 0),
+                                    dither = \_ -> True},
                      canvasHeight = ht,
                      canvasWidth = wd,
                      zoom = zm,
