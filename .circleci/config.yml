@@ -23,6 +23,6 @@ jobs:
             - "/root/.stack"
             - ".stack-work"
       - store_artifacts:
-          path: ~/.local/bin/hsptest-exe
-          destination: hsptest-exe
+          path: ~/.local/bin/hspaint-exe
+          destination: hspaint-exe
 
