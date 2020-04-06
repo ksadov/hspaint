@@ -8,7 +8,7 @@ jobs:
       - restore_cache:
           name: Restore Cached Dependencies
           keys:
-            - cci-demo-haskell-v1-{{ checksum "hspaint.cabal" }}-{{ checksum "package.yaml" }}
+            - cci-demo-haskell-v1-{{ checksum "hspaint.cabal" }}-{{ checksum "stack.yaml" }}
             - cci-demo-haskell-v1-{{ checksum "hspaint.cabal" }}
       - run:
           name: Resolve/Update Dependencies
@@ -18,7 +18,7 @@ jobs:
           command: stack --no-terminal install
       - save_cache:
           name: Cache Dependencies
-          key: cci-demo-haskell-v1-{{ checksum "hspaint.cabal" }}-{{ checksum "package.yaml" }}
+          key: cci-demo-haskell-v1-{{ checksum "hspaint.cabal" }}-{{ checksum "stack.yaml" }}
           paths:
             - "/root/.stack"
             - ".stack-work"
