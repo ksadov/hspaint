@@ -1,0 +1,28 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: fpco/stack-build:lts
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Cached Dependencies
+          keys:
+            - cci-demo-haskell-v1-{{ checksum "hspaint.cabal" }}-{{ checksum "package.yaml" }}
+            - cci-demo-haskell-v1-{{ checksum "hspaint.cabal" }}
+      - run:
+          name: Resolve/Update Dependencies
+          command: stack --no-terminal setup
+      - run:
+          name: Install executable
+          command: stack --no-terminal install
+      - save_cache:
+          name: Cache Dependencies
+          key: cci-demo-haskell-v1-{{ checksum "hspaint.cabal" }}-{{ checksum "package.yaml" }}
+          paths:
+            - "/root/.stack"
+            - ".stack-work"
+      - store_artifacts:
+          path: ~/.local/bin/hsptest-exe
+          destination: hsptest-exe
+
