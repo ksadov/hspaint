@@ -22,7 +22,4 @@ jobs:
           paths:
             - "/root/.stack"
             - ".stack-work"
-      - store_artifacts:
-          path: ~/.local/bin/hspaint
-          destination: hspaint
 
