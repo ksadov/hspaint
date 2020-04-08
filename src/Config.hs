@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Config () where
+module Config where
 
 import System.IO
 import Data.Bits
@@ -69,7 +69,7 @@ pColor = do
   _ <- symbol "Color"
   n <- lexeme L.decimal
   if n > 9
-    then fail "Can only specify colors 1-9"
+    then fail "Can only specify colors 0-9"
     else do
     _ <- symbol ":"
     _ <- symbol "#"

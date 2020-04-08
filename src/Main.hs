@@ -1,5 +1,6 @@
 module Main where
 
+import System.Environment
 import Graphics.Gloss.Interface.Pure.Game
 import Graphics.Gloss.Raster.Array
 import Data.Array.Repa as R
@@ -8,6 +9,7 @@ import Codec.Picture as JP
 import Codec.Picture.Extra as JP.Extra
 import Codec.Picture.Saving as JP.Save
 import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as VU
 import qualified Data.ByteString.Lazy as B
 import GHC.Word
 import System.Exit
@@ -29,7 +31,9 @@ data World = World { worldMap     :: [(Int, Hue)],
                      zoom         :: Int,
                      mouseState   :: MouseState,
                      last4marks   :: [(Int, Int)],
-                     filename     :: String
+                     filename     :: String,
+                     palette      :: VU.Vector (Int, Int, Int),
+                     filetype     :: C.Filetype
                    }
 
 -- |[idxOfPix (x, y) w] is the [worldMap w] index corresponding to pixel (x, y)
@@ -175,6 +179,13 @@ handleEvent (EventKey (Char num) Down (Modifiers Up Down Up) _) w =
   in
   return (w {brush = ((brush w) {dither = pattern})})
 
+-- change color
+handleEvent (EventKey (Char num) Down (Modifiers Up Up Up) _) w | '0' <= num && num <= '9' =
+  let idx = fromEnum num - fromEnum '0' in
+    case ((palette w) VU.!? idx) of
+      Just x -> return (w {brush = ((brush w) {col = x})})
+      Nothing -> return w
+
 -- increase brush size
 handleEvent (EventKey (Char 'w') Down _ _) w =
   return (w {brush = ((brush w) {sz = (sz $ brush w) + 2})})
@@ -254,7 +265,10 @@ beginDraw wd ht wm fname =
                      zoom = zm,
                      mouseState = MouseUp,
                      last4marks = [],
-                     filename = fname } in
+                     filename = fname,
+                     palette = C.defaultPalette,
+                     filetype = C.PNG
+               } in
   playArrayIO
   FullScreen
   (zm, zm)
@@ -267,14 +281,16 @@ beginDraw wd ht wm fname =
 main :: IO ()
 main =
   do
+    args <- getArgs
+    setup <- C.getConfig args
     putStrLn "Load existing image? (y/n)"
     resp <- getLine
     putStrLn "Enter filename:"
     fname <- getLine
     if (head resp == 'y') then
       do
-        (ht, wd, wm) <- loadImg fname
-        beginDraw wd ht wm fname
+        (htI, wdI, wmI) <- loadImg fname
+        beginDraw wdI htI wmI fname
       else
         let wd = 150 in
           let ht = 100 in
