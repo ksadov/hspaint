@@ -32,8 +32,7 @@ data World = World { worldMap     :: [(Int, Hue)],
                      mouseState   :: MouseState,
                      last4marks   :: [(Int, Int)],
                      filename     :: String,
-                     palette      :: VU.Vector (Int, Int, Int),
-                     filetype     :: C.Filetype
+                     palette      :: VU.Vector (Int, Int, Int)
                    }
 
 -- |[idxOfPix (x, y) w] is the [worldMap w] index corresponding to pixel (x, y)
@@ -266,8 +265,7 @@ beginDraw wd ht wm fname =
                      mouseState = MouseUp,
                      last4marks = [],
                      filename = fname,
-                     palette = C.defaultPalette,
-                     filetype = C.PNG
+                     palette = C.defaultPalette
                } in
   playArrayIO
   FullScreen

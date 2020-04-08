@@ -10,12 +10,9 @@ import Text.Megaparsec.Char
 import qualified Data.Vector.Unboxed as V
 import qualified Text.Megaparsec.Char.Lexer as L
 
-data Filetype = PNG | BMP | TIFF
-
 data Setup = Setup { height :: Int,
                      width :: Int,
-                     palette :: V.Vector (Int, Int, Int),
-                     filetype :: Filetype }
+                     palette :: V.Vector (Int, Int, Int)}
 
 type Parser = Parsec Void String
 
@@ -31,8 +28,7 @@ defaultPalette = V.fromList [(255, 255, 255),
 dft :: Setup
 dft = Setup { height = 100,
                   width = 150,
-                  palette = defaultPalette,
-                  filetype = PNG }
+                  palette = defaultPalette}
 
 sc :: Parser ()
 sc = L.space
@@ -45,14 +41,6 @@ lexeme = L.lexeme sc
 
 symbol :: String -> Parser String
 symbol = L.symbol' sc
-
-pFormat :: Parser Filetype
-pFormat = do
-  _ <- symbol "filetype:"
-  ft <- choice [ PNG  <$ symbol "png",
-                 BMP  <$ symbol "bmp",
-                 TIFF <$ symbol "tiff"]
-  return ft
 
 pWidth :: Parser Int
 pWidth = do
@@ -90,14 +78,12 @@ hexToRGB h =
 
 pSetup :: Parser Setup
 pSetup = do
-  fmt <- pFormat
   ht <- pHeight
   wd <- pWidth
   pal <- pPalette
   return (Setup { height = ht,
                   width = wd,
-                  palette = pal,
-                  filetype = fmt })
+                  palette = pal})
 
 getConfig :: [String] -> IO (Setup)
 getConfig [] = return dft
