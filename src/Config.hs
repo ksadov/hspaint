@@ -2,6 +2,7 @@
 
 module Config () where
 
+import System.IO
 import Data.Bits
 import Data.Void
 import Text.Megaparsec
@@ -98,17 +99,16 @@ pSetup = do
                   palette = pal,
                   filetype = fmt })
 
-configFromFile :: String -> IO (Setup)
-configFromFile x = do
+getConfig :: [String] -> IO (Setup)
+getConfig [] = return dft
+getConfig (x:xs) = do
   hl <- openFile x ReadMode
   ct <- hGetContents hl
-  hclose;
-  case (runParser x ct) of
-    Left p -> print p >> return dft
-    Right r -> return r
+  hClose hl
+  return (parseFile x ct)
 
-getConfig :: [String] -> IO (Setup)
-getConfig args =
-  case args of
-    [] -> return dft
-    x::xs -> configFromFile x
+parseFile :: String -> String -> Setup
+parseFile x ct =
+  case (runParser pSetup x ct) of
+    Left p -> dft
+    Right r -> r

@@ -283,5 +283,3 @@ main =
             ht
             (zip [0..] (Prelude.replicate (wd*ht) (255, 255, 255)))
             fname
-
-
