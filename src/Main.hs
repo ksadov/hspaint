@@ -11,6 +11,7 @@ import qualified Data.Vector.Storable as VS
 import qualified Data.ByteString.Lazy as B
 import GHC.Word
 import System.Exit
+import qualified Config as C
 
 data MouseState = MouseDown | MouseUp
 
@@ -282,3 +283,5 @@ main =
             ht
             (zip [0..] (Prelude.replicate (wd*ht) (255, 255, 255)))
             fname
+
+
