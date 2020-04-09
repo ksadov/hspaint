@@ -253,7 +253,10 @@ beginDrawNew :: C.Setup -> String -> IO()
 beginDrawNew st fname =
   let wd = C.width st in
     let ht = C.height st in
-      let wm = (zip [0..] (Prelude.replicate (wd*ht) ((C.palette st) VU.! 0))) in
+     let bgcol = case (C.palette st VU.!? 0) of
+          Just c -> c
+          Nothing -> (0, 0, 0) in
+      let wm = (zip [0..] (Prelude.replicate (wd*ht) bgcol)) in
         beginDraw wd ht wm st fname
 
 -- |[beginDraw wd ht wm fname] starts the drawing program with a canvas of
@@ -261,10 +264,13 @@ beginDrawNew st fname =
 beginDraw :: Int -> Int -> [(Int, Hue)] -> C.Setup -> String -> IO()
 beginDraw wd ht wm st fname =
   let zm = 4 in
+    let startcol = case (C.palette st VU.!? 1) of
+          Just sc -> sc
+          Nothing -> (0, 0, 0) in
     let startWorld =
          World { worldMap = wm,
                      brush = Brush {sz = 2,
-                                    col = (0, 0, 0),
+                                    col = startcol,
                                     dither = \_ -> True},
                      canvasHeight = ht,
                      canvasWidth = wd,
@@ -297,11 +303,4 @@ main =
         (htI, wdI, wmI) <- loadImg fname
         beginDraw wdI htI wmI setup fname
       else
-        let wd = 150 in
-          let ht = 100 in
-            beginDraw
-            wd
-            ht
-            (zip [0..] (Prelude.replicate (wd*ht) (255, 255, 255)))
-            setup
-            fname
+        beginDrawNew setup fname
