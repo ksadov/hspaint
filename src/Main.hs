@@ -249,10 +249,17 @@ save w =
       let out = JP.Save.imageToPng di in
       B.writeFile (filename w) out
 
+beginDrawNew :: C.Setup -> String -> IO()
+beginDrawNew st fname =
+  let wd = C.width st in
+    let ht = C.height st in
+      let wm = (zip [0..] (Prelude.replicate (wd*ht) ((C.palette st) VU.! 0))) in
+        beginDraw wd ht wm st fname
+
 -- |[beginDraw wd ht wm fname] starts the drawing program with a canvas of
---   width [wd], height [ht], worldmap [w] and filename [fname].
-beginDraw :: Int -> Int -> [(Int, Hue)] -> String -> IO()
-beginDraw wd ht wm fname =
+--   width [wd], height [ht], worldmap [w], setup [st]  and filename [fname].
+beginDraw :: Int -> Int -> [(Int, Hue)] -> C.Setup -> String -> IO()
+beginDraw wd ht wm st fname =
   let zm = 4 in
     let startWorld =
          World { worldMap = wm,
@@ -288,7 +295,7 @@ main =
     if (head resp == 'y') then
       do
         (htI, wdI, wmI) <- loadImg fname
-        beginDraw wdI htI wmI fname
+        beginDraw wdI htI wmI C.dft fname
       else
         let wd = 150 in
           let ht = 100 in
@@ -296,4 +303,5 @@ main =
             wd
             ht
             (zip [0..] (Prelude.replicate (wd*ht) (255, 255, 255)))
+            C.dft
             fname

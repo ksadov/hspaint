@@ -12,7 +12,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 data Setup = Setup { height :: Int,
                      width :: Int,
-                     palette :: V.Vector (Int, Int, Int)}
+                     palette :: V.Vector (Int, Int, Int)} deriving (Show)
 
 type Parser = Parsec Void String
 
@@ -44,12 +44,12 @@ symbol = L.symbol' sc
 
 pWidth :: Parser Int
 pWidth = do
-  _ <- symbol "height:"
+  _ <- symbol "width:"
   lexeme L.decimal
 
 pHeight :: Parser Int
 pHeight = do
-  _ <- symbol "format:"
+  _ <- symbol "height:"
   lexeme L.decimal
 
 pColor :: Parser (Int, Int, Int)
@@ -72,12 +72,13 @@ pPalette = do
 hexToRGB :: Int -> (Int, Int, Int)
 hexToRGB h =
   let b = h `mod` 256 in
-    let g = (shift h 8) `mod` 256 in
-      let r = (shift h 16) `mod` 256 in
+    let g = (shiftR h 8) `mod` 256 in
+      let r = (shiftR h 16) `mod` 256 in
         (r, g, b)
 
 pSetup :: Parser Setup
 pSetup = do
+  _ <- sc
   ht <- pHeight
   wd <- pWidth
   pal <- pPalette
@@ -90,8 +91,9 @@ getConfig [] = return dft
 getConfig (x:xs) = do
   hl <- openFile x ReadMode
   ct <- hGetContents hl
-  hClose hl
-  return (parseFile x ct)
+  let pf = parseFile x ct in do
+    hClose hl
+    return pf
 
 parseFile :: String -> String -> Setup
 parseFile x ct =
