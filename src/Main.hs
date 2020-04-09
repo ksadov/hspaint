@@ -195,17 +195,39 @@ handleEvent (EventKey (Char 'q') Down _ _) w =
 
 -- clear canvas
 handleEvent (EventKey (Char 'c') Down _ _) w =
-  return (w {worldMap = zip [0..]
-              (Prelude.replicate ((canvasWidth w)*(canvasHeight w)) (255, 255, 255))})
+  let bgcolor = palette w VU.! 0 in
+    return (w {worldMap = zip [0..]
+              (Prelude.replicate ((canvasWidth w)*(canvasHeight w)) bgcolor)})
+
+-- eraser
+handleEvent (EventKey (Char 'e') Down _ _) w =
+  let bgcolor = palette w VU.! 0 in
+    return (w {brush = ((brush w) {col = bgcolor})})
 
 -- save
 handleEvent (EventKey (Char 's') Down _ _) w =
   save w >> putStrLn ("Saved image to " Prelude.++ (filename w)) >> return w
 
+-- flip horizontal
+handleEvent (EventKey (Char 'h') Down _ _) w =
+  return (w {worldMap = flipHorizontal (canvasWidth w) (worldMap w)})
+
+
 handleEvent _ w = return w
 
 step :: Float -> World -> IO World
 step _ w = return w
+
+groupRows :: Int -> [a] -> [[a]]
+groupRows n [] = []
+groupRows n lst = (take n lst) : (groupRows n (drop n lst))
+
+flipHorizontal ::  Int -> [(Int, Hue)] ->  [(Int, Hue)]
+flipHorizontal wd wm =
+  let stripped = Prelude.map snd wm in
+    let rows = groupRows wd stripped  in
+      let reversedRows = Prelude.map Prelude.reverse rows in
+        zip [0..] (concat reversedRows)
 
 -- |[loadImg fname] returns [(ht, wd, wm)], where [ht], [wd] and [wm] are the
 --   height, width and pixel data of the image stored in [fname].
