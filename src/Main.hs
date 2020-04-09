@@ -212,16 +212,19 @@ handleEvent (EventKey (Char 's') Down _ _) w =
 handleEvent (EventKey (Char 'h') Down _ _) w =
   return (w {worldMap = flipHorizontal (canvasWidth w) (worldMap w)})
 
-
+-- do nothing for other keys
 handleEvent _ w = return w
 
 step :: Float -> World -> IO World
 step _ w = return w
 
+-- |[groupRows n lst] splits a list into a list of lists of n elements
 groupRows :: Int -> [a] -> [[a]]
 groupRows n [] = []
 groupRows n lst = (take n lst) : (groupRows n (drop n lst))
 
+-- |[flipHorizontal wd wm] is a worldmap representing [wm] flipped horizontally,
+--   where [wm] has width [wd]
 flipHorizontal ::  Int -> [(Int, Hue)] ->  [(Int, Hue)]
 flipHorizontal wd wm =
   let stripped = Prelude.map snd wm in
@@ -271,6 +274,8 @@ save w =
       let out = JP.Save.imageToPng di in
       B.writeFile (filename w) out
 
+-- |[beginDraw wd ht wm fname] starts the drawing program with setup [st],
+--   and filename [fname].
 beginDrawNew :: C.Setup -> String -> IO()
 beginDrawNew st fname =
   let wd = C.width st in
