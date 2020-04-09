@@ -89,11 +89,8 @@ pSetup = do
 getConfig :: [String] -> IO (Setup)
 getConfig [] = return dft
 getConfig (x:xs) = do
-  hl <- openFile x ReadMode
-  ct <- hGetContents hl
-  let pf = parseFile x ct in do
-    hClose hl
-    return pf
+  ct <- readFile x
+  return (parseFile x ct)
 
 parseFile :: String -> String -> Setup
 parseFile x ct =

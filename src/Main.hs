@@ -272,7 +272,7 @@ beginDraw wd ht wm st fname =
                      mouseState = MouseUp,
                      last4marks = [],
                      filename = fname,
-                     palette = C.defaultPalette
+                     palette = C.palette st
                } in
   playArrayIO
   FullScreen
@@ -295,7 +295,7 @@ main =
     if (head resp == 'y') then
       do
         (htI, wdI, wmI) <- loadImg fname
-        beginDraw wdI htI wmI C.dft fname
+        beginDraw wdI htI wmI setup fname
       else
         let wd = 150 in
           let ht = 100 in
@@ -303,5 +303,5 @@ main =
             wd
             ht
             (zip [0..] (Prelude.replicate (wd*ht) (255, 255, 255)))
-            C.dft
+            setup
             fname
