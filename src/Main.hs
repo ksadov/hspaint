@@ -81,7 +81,7 @@ stroke pos w =
 connectStrokes :: World -> World
 connectStrokes w =
   case (last4marks w) of
-    p1:p2:t -> fillLine' p1 p2 w
+    p1:p2:t -> fillLine' p1 p2 (makeMark (makeMark w p2) p1)
     p:[] -> makeMark w p
     _ -> w
 
@@ -119,16 +119,18 @@ pointToLine (x0, y0) (x1, y1) (x2, y2) =
       else round (numerator / denominator)
 
 pointToPoint :: (Int, Int) -> (Int, Int) -> Int
-pointToPoint (x0, y0) (x1, y1) = round $ sqrt $ fromIntegral ((x0 - x1)^2 - (y0 - y1)^2)
-  
+pointToPoint (x0, y0) (x1, y1) = round $ sqrt $ fromIntegral ((x0 - x1)^2 + (y0 - y1)^2)
+
 fillLine' :: (Int, Int) -> (Int, Int) -> World -> World
 fillLine' (x1, y1) (x2, y2) w =
   let radius = quot (sz . brush $ w) 2 in
     let updateIdx (idx, colr) =
           let (x0, y0) = pixOfidx idx w in
             if pointToLine (x0, y0) (x1, y1) (x2, y2)  < radius
-            && ((x0 >= x1 + radius && x0 <= x2 - radius ) || (x0 <= x1 - radius  && x0 >= x2 + radius ))
-            && ((y0 >= y1 + radius && y0 <= y2 - radius ) || (y0 <= y1 - radius  && y0 >= y2 + radius ))
+            && pointToPoint (x0, y0) (x1, y1) >= radius
+            && pointToPoint (x0, y0) (x2, y2) >= radius
+            && ((x0 > x1 - radius && x0 < x2 + radius) || (x0 < x1 + radius  && x0 > x2 - radius))
+            && ((y0 > y1 - radius && y0 < y2 + radius) || (y0 < y1 + radius  && y0 > y2 - radius))
             && (dither $ brush w) (x0, y0)
             then (idx, col . brush $ w)
             else (idx, colr) in
