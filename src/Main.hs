@@ -51,7 +51,8 @@ makeMark w (x, y) =
   let radius = quot (sz . brush $ w) 2 in
     let updateIdx (idx, colr) =
           let (x', y') = pixOfidx idx w in
-            if (((x-x')^2 + (y-y')^2) < radius^2 && (dither $ brush w) (x', y'))
+            if (pointToPoint (x, y) (x', y') < radius
+                && (dither $ brush w) (x', y'))
             then (idx, col . brush $ w)
             else (idx, colr) in
       let newmap = Prelude.map updateIdx (worldMap w) in
@@ -81,46 +82,30 @@ stroke pos w =
 connectStrokes :: World -> World
 connectStrokes w =
   case (last4marks w) of
-    p1:p2:t -> fillLine' p1 p2 (makeMark (makeMark w p2) p1)
+    p1:p2:t -> fillLine p1 p2 (makeMark (makeMark w p2) p1)
     p:[] -> makeMark w p
     _ -> w
 
--- |[fillLine p1 p2 w] is a world where the marks at points p1 and p2 are
---   visually connected by a straight line.
-fillLine :: (Int, Int) -> (Int, Int) -> World -> World
-fillLine (x1, y1) (x2, y2) w =
-  if (abs (x2 - x1)) > (abs (y2 - y1))
-  -- solve for y in terms of x
-  then
-    case (lineCoefficients (x1, y1) (x2, y2)) of
-      Right (a, b) ->
-        let rangelst = if x1 > x2 then [x1,x1-1 .. x2] else [x1 .. x2] in
-          let pointlst = Prelude.map
-                             (\x -> (x, round (a * (fromIntegral x) + b)))
-                             rangelst in
-                   (Prelude.foldl makeMark w pointlst)
-      Left _ -> makeMark w (x1, y1)
-  -- solve for x in terms of y
-   else
-     case lineCoefficients (y1, x1) (y2, x2) of
-       Right (a, b) ->
-        let rangelst = if y1 > y2 then [y1,y1-1 .. y2] else [y1 .. y2] in
-          let pointlst = Prelude.map
-                              (\y -> (round (a * (fromIntegral y) + b), y))
-                              rangelst in
-                 (Prelude.foldl makeMark w pointlst)
-       Left _ -> makeMark w (x1, y1)
-
+-- |[pointToLine p0 p1 p2] is the distance between [p0] and the line containing
+--   [p1] and [p2]
 pointToLine :: (Int, Int) -> (Int, Int) -> (Int, Int) -> Int
 pointToLine (x0, y0) (x1, y1) (x2, y2) =
-  let numerator = fromIntegral $ abs ((y2 - y1)*x0 - (x2 - x1)*y0 + x2*y1 - y2*x1) :: Double in
+  let numerator = fromIntegral $ abs ((y2 - y1)*x0 -
+                                      (x2 - x1)*y0 +
+                                      x2*y1 -
+                                      y2*x1) :: Double in
     let denominator = sqrt $ fromIntegral ((y2 - y1)^2 + (x2 - x1)^2) in
       if denominator == 0 then pointToPoint (x0, y0) (x1, y1)
       else round (numerator / denominator)
 
+-- |[pointToLine p0 p1] is the distance between [p0] and [p1]
 pointToPoint :: (Int, Int) -> (Int, Int) -> Int
-pointToPoint (x0, y0) (x1, y1) = round $ sqrt $ fromIntegral ((x0 - x1)^2 + (y0 - y1)^2)  
-  
+pointToPoint (x0, y0) (x1, y1) =
+  round $ sqrt $ fromIntegral ((x0 - x1)^2 + (y0 - y1)^2)  
+
+-- |[inRectangle p0 p1 p2 r] is true if [p0] falls within a rectangle with
+--   width [r], length the distance between [p1] and [p2] and sides parallel to
+--   the line containing [p1] and [p2].
 inRectangle :: (Int, Int) -> (Int, Int) -> (Int, Int) -> Int -> Bool
 inRectangle (x0, y0) (x1, y1) (x2, y2) radius =
   let (x0', y0') = (fromIntegral x0, fromIntegral y0) in
@@ -135,8 +120,10 @@ inRectangle (x0, y0) (x1, y1) (x2, y2) radius =
     (y0' < perp * x0' + b1 && y0' > perp * x0' + b2 ||
      y0' > perp * x0' + b1 && y0' < perp * x0' + b2)
 
-fillLine' :: (Int, Int) -> (Int, Int) -> World -> World
-fillLine' (x1, y1) (x2, y2) w =
+-- |[fillLine p1 p2 w] is a world where the marks at points p1 and p2 are
+--   visually connected by a straight line.
+fillLine :: (Int, Int) -> (Int, Int) -> World -> World
+fillLine (x1, y1) (x2, y2) w =
   let radius = quot (sz . brush $ w) 2 in
     let updateIdx (idx, colr) =
           let (x0, y0) = pixOfidx idx w in
@@ -147,7 +134,7 @@ fillLine' (x1, y1) (x2, y2) w =
             else (idx, colr) in
       let newmap = Prelude.map updateIdx (worldMap w) in
         w {worldMap = newmap}
-  
+
 -- |[lineCoefficients p1 p2] is [(a, b}] such that a * x + b = y is the equation
 --   of the line containing points [p1] and [p2].
 lineCoefficients :: (Int, Int) -> (Int, Int) -> Either String (Float, Float)
