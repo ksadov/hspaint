@@ -1,4 +1,5 @@
 # hspaint
+![example1](https://raw.githubusercontent.com/ksadov/hspaint/pointToLine/carol1.png)
 [![ksadov](https://circleci.com/gh/ksadov/hspaint.svg?style=svg)](https://app.circleci.com/pipelines/github/ksadov/hspaint)
 
 #### To run: ####
