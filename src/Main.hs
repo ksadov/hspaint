@@ -119,7 +119,17 @@ pointToLine (x0, y0) (x1, y1) (x2, y2) =
       else round (numerator / denominator)
 
 pointToPoint :: (Int, Int) -> (Int, Int) -> Int
-pointToPoint (x0, y0) (x1, y1) = round $ sqrt $ fromIntegral ((x0 - x1)^2 + (y0 - y1)^2)
+pointToPoint (x0, y0) (x1, y1) = round $ sqrt $ fromIntegral ((x0 - x1)^2 + (y0 - y1)^2)  
+  
+inRectangle :: (Int, Int) -> (Int, Int) -> (Int, Int) -> Int -> Bool
+inRectangle (x0, y0) (x1, y1) (x2, y2) radius =
+  let (x0', y0') = (fromIntegral x0, fromIntegral y0) in
+  let (perp, b1, b2) =
+        case lineCoefficients (x1, y1) (x2, y2) of
+          Left _ -> (0, fromIntegral y1, fromIntegral y2)
+          Right (a, b) -> (-(1/a), (fromIntegral y1) + (1/a)*(fromIntegral x1), (fromIntegral y2) + (1/a)*fromIntegral x2) in
+    (y0' < perp * x0' + b1 && y0' > perp * x0' + b2 ||
+     y0' > perp * x0' + b1 && y0' < perp * x0' + b2)
 
 fillLine' :: (Int, Int) -> (Int, Int) -> World -> World
 fillLine' (x1, y1) (x2, y2) w =
@@ -127,10 +137,7 @@ fillLine' (x1, y1) (x2, y2) w =
     let updateIdx (idx, colr) =
           let (x0, y0) = pixOfidx idx w in
             if pointToLine (x0, y0) (x1, y1) (x2, y2)  < radius
-            && pointToPoint (x0, y0) (x1, y1) >= radius
-            && pointToPoint (x0, y0) (x2, y2) >= radius
-            && ((x0 > x1 - radius && x0 < x2 + radius) || (x0 < x1 + radius  && x0 > x2 - radius))
-            && ((y0 > y1 - radius && y0 < y2 + radius) || (y0 < y1 + radius  && y0 > y2 - radius))
+            && inRectangle (x0, y0) (x1, y1) (x2, y2) radius
             && (dither $ brush w) (x0, y0)
             then (idx, col . brush $ w)
             else (idx, colr) in
