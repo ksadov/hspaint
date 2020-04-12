@@ -61,10 +61,11 @@ makeMark w (x, y) =
             else (idx, colr) in
       let newmap = Prelude.map updateIdx (worldMap w) in
         w {worldMap = newmap}
-
+        
+-- |[multMode h1 h2] mixes [h1] [h2]
 multMode :: Hue -> Hue -> Hue
 multMode (r0, g0, b0) (r1, g1, b1) =
-  (min 255 (r0*r1), min 55 (g0*g1), min 255 (b0*b1))
+  (min 255 (r0*r1), min 255 (g0*g1), min 255 (b0*b1))
 
 -- |[getPix p w] is the pixel of [w] corresponding to mouse position [p]
 getPix :: Point -> World -> Either String (Int, Int)
@@ -138,7 +139,10 @@ fillLine (x1, y1) (x2, y2) w =
             if pointToLine (x0, y0) (x1, y1) (x2, y2)  < radius
             && inRectangle (x0, y0) (x1, y1) (x2, y2) radius
             && (dither $ brush w) (x0, y0)
-            then (idx, col . brush $ w)
+            then
+              if (multiply w)
+              then (idx, multMode (col . brush $ w) colr)
+              else (idx, col . brush $ w)
             else (idx, colr) in
       let newmap = Prelude.map updateIdx (worldMap w) in
         w {worldMap = newmap}
