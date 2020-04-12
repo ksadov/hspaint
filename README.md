@@ -33,4 +33,6 @@ To load an existing file, type "y" at the prompt and then enter the name of the 
 
 `h` flip canvas horizontally
 
+`m` toggle multiply mode
+
 `c` clear canvas
