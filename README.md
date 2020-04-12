@@ -6,7 +6,7 @@
 #### To run: ####
 
 ```
-stack run [optional .config file]
+stack run [path to optional .config file]
 ```
 
 To load an existing file, type "y" at the prompt and then enter the name of the file that you wish to load at the second prompt. If you don't want to load an existing file, type "n" and then enter the file name that you'd like to save your new drawing under. The canvas will be displayed in fullscreen mode. To draw, drag the cursor over the canvas while holding the left mouse key.
