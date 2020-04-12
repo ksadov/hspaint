@@ -119,6 +119,7 @@ pointToLine (x0, y0) (x1, y1) (x2, y2) =
       else round (numerator / denominator)
 
 pointToPoint :: (Int, Int) -> (Int, Int) -> Int
+<<<<<<< HEAD
 pointToPoint (x0, y0) (x1, y1) = round $ sqrt $ fromIntegral ((x0 - x1)^2 + (y0 - y1)^2)  
   
 inRectangle :: (Int, Int) -> (Int, Int) -> (Int, Int) -> Int -> Bool
@@ -130,6 +131,9 @@ inRectangle (x0, y0) (x1, y1) (x2, y2) radius =
           Right (a, b) -> (-(1/a), (fromIntegral y1) + (1/a)*(fromIntegral x1), (fromIntegral y2) + (1/a)*fromIntegral x2) in
     (y0' < perp * x0' + b1 && y0' > perp * x0' + b2 ||
      y0' > perp * x0' + b1 && y0' < perp * x0' + b2)
+=======
+pointToPoint (x0, y0) (x1, y1) = round $ sqrt $ fromIntegral ((x0 - x1)^2 + (y0 - y1)^2)
+>>>>>>> 6dad6ac7c486310cc427479dbb7a33f0e07dcc89
 
 fillLine' :: (Int, Int) -> (Int, Int) -> World -> World
 fillLine' (x1, y1) (x2, y2) w =
@@ -137,7 +141,14 @@ fillLine' (x1, y1) (x2, y2) w =
     let updateIdx (idx, colr) =
           let (x0, y0) = pixOfidx idx w in
             if pointToLine (x0, y0) (x1, y1) (x2, y2)  < radius
+<<<<<<< HEAD
             && inRectangle (x0, y0) (x1, y1) (x2, y2) radius
+=======
+            && pointToPoint (x0, y0) (x1, y1) >= radius
+            && pointToPoint (x0, y0) (x2, y2) >= radius
+            && ((x0 > x1 - radius && x0 < x2 + radius) || (x0 < x1 + radius  && x0 > x2 - radius))
+            && ((y0 > y1 - radius && y0 < y2 + radius) || (y0 < y1 + radius  && y0 > y2 - radius))
+>>>>>>> 6dad6ac7c486310cc427479dbb7a33f0e07dcc89
             && (dither $ brush w) (x0, y0)
             then (idx, col . brush $ w)
             else (idx, colr) in
