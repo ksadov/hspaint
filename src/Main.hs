@@ -32,7 +32,8 @@ data World = World { worldMap     :: [(Int, Hue)],
                      mouseState   :: MouseState,
                      last4marks   :: [(Int, Int)],
                      filename     :: String,
-                     palette      :: VU.Vector (Int, Int, Int)
+                     palette      :: VU.Vector (Int, Int, Int),
+                     multiply     :: Bool
                    }
 
 -- |[idxOfPix (x, y) w] is the [worldMap w] index corresponding to pixel (x, y)
@@ -53,10 +54,17 @@ makeMark w (x, y) =
           let (x', y') = pixOfidx idx w in
             if (pointToPoint (x, y) (x', y') < radius
                 && (dither $ brush w) (x', y'))
-            then (idx, col . brush $ w)
+            then
+              if (multiply w)
+              then (idx, multMode (col . brush $ w) colr)
+              else (idx, col . brush $ w)
             else (idx, colr) in
       let newmap = Prelude.map updateIdx (worldMap w) in
         w {worldMap = newmap}
+
+multMode :: Hue -> Hue -> Hue
+multMode (r0, g0, b0) (r1, g1, b1) =
+  (min 255 (r0*r1), min 55 (g0*g1), min 255 (b0*b1))
 
 -- |[getPix p w] is the pixel of [w] corresponding to mouse position [p]
 getPix :: Point -> World -> Either String (Int, Int)
@@ -236,6 +244,10 @@ handleEvent (EventKey (Char 's') Down _ _) w =
 handleEvent (EventKey (Char 'h') Down _ _) w =
   return (w {worldMap = flipHorizontal (canvasWidth w) (worldMap w)})
 
+-- multiply
+handleEvent (EventKey (Char 'm') Down _ _) w =
+  return (w {multiply = not (multiply w)})
+
 -- do nothing for other keys
 handleEvent _ w = return w
 
@@ -329,7 +341,8 @@ beginDraw wd ht wm st fname =
                      mouseState = MouseUp,
                      last4marks = [],
                      filename = fname,
-                     palette = C.palette st
+                     palette = C.palette st,
+                     multiply = False        
                } in
   playArrayIO
   FullScreen
