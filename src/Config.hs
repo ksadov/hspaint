@@ -27,7 +27,7 @@ defaultPalette = V.fromList [(255, 255, 255),
                              (0, 255, 255)]
 dft :: Setup
 dft = Setup { height = 200,
-                  width = 300,
+                  width = 200,
                   palette = defaultPalette}
 
 sc :: Parser ()

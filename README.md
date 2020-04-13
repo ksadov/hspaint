@@ -3,7 +3,7 @@
 
 [![ksadov](https://circleci.com/gh/ksadov/hspaint.svg?style=svg)](https://app.circleci.com/pipelines/github/ksadov/hspaint)
 
-#### To run: ####
+### To run: ###
 
 ```
 stack run [path to optional .config file]
@@ -38,3 +38,7 @@ To load an existing file, type "y" at the prompt and then enter the name of the 
 `n` toggle highlight mode
 
 `c` clear canvas
+
+### tips ###
+
+If the program is running too slowly, try loading a .config file with a smaller canvas size. 200 x 300 pixels is the reccomended maximum.
