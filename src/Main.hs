@@ -196,20 +196,20 @@ handleEvent (EventMotion pos) w =
      MouseUp -> return w
 
 -- dither patterns
-handleEvent (EventKey (Char num) Down (Modifiers Up Down Up) _) w =
+handleEvent (EventKey (Char num) Down (Modifiers Down _ _) _) w =
   let pattern =
         case num of
-          '2' -> (\(x, y) -> (x + y) `mod` 2 == 0)
-          '3' -> (\(x, y) -> x `mod` 2 == 0)
-          '4' -> (\(x, y) -> (x - y) `mod` 4 == 0)
-          '5' -> (\(x, y) -> (x - y) `mod` 4 == 0 && (x + y) `mod` 4 == 0)
-          '6' -> (\(x, y) -> (x - y) `mod` 4 == 0 || (x + y) `mod` 4 == 0)
-          '7' -> (\(x, y) -> if y `mod` 2 == 0
+          '@' -> (\(x, y) -> (x + y) `mod` 2 == 0)
+          '#' -> (\(x, y) -> x `mod` 2 == 0)
+          '$' -> (\(x, y) -> (x - y) `mod` 4 == 0)
+          '%' -> (\(x, y) -> (x - y) `mod` 4 == 0 && (x + y) `mod` 4 == 0)
+          '^' -> (\(x, y) -> (x - y) `mod` 4 == 0 || (x + y) `mod` 4 == 0)
+          '&' -> (\(x, y) -> if y `mod` 2 == 0
                              then x `mod` 4 == 0
                              else (x + 2) `mod` 4 == 0)
-          '8' -> (\(x, y) -> y `mod` 2 == 0)
-          '9' -> (\(x,y) -> (x - y) `mod` 4 == 0 || (x - y + 1) `mod` 4 == 0)
-          '0' -> (\(x,y) -> (x - y) `mod` 3 == 0 || (x - y + 1) `mod` 4 == 0)
+          '*' -> (\(x, y) -> y `mod` 2 == 0)
+          '(' -> (\(x,y) -> (x - y) `mod` 4 == 0 || (x - y + 1) `mod` 4 == 0)
+          ')' -> (\(x,y) -> (x - y) `mod` 3 == 0 || (x - y + 1) `mod` 4 == 0)
           _ -> (\_ -> True)
   in
   return (w {brush = ((brush w) {dither = pattern})})

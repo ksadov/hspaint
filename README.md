@@ -29,7 +29,7 @@ To load an existing file, type "y" at the prompt and then enter the name of the 
 
 `e` eraser; switch brush color to background color (the same effect as pressing the `0` key)
 
-`Ctrl + 0-9` switch dithering pattern
+`Shift + 0-9` switch dithering pattern
 
 `h` flip canvas horizontally
 
