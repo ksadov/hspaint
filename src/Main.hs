@@ -21,6 +21,8 @@ data Brush =  Brush { sz :: Int,
                       col :: Hue,
                       dither :: (Int, Int) -> Bool}
 
+data BlendMode = NoMode | MinMode | MaxMode
+
 -- |(r, g, b)
 type Hue = (Int, Int, Int)
 
@@ -33,7 +35,7 @@ data World = World { worldMap     :: [(Int, Hue)],
                      last4marks   :: [(Int, Int)],
                      filename     :: String,
                      palette      :: VU.Vector (Int, Int, Int),
-                     multiply     :: Bool
+                     blend        :: BlendMode
                    }
 
 -- |[idxOfPix (x, y) w] is the [worldMap w] index corresponding to pixel (x, y)
@@ -46,31 +48,36 @@ pixOfidx n w = let (flipy, x) = quotRem n (canvasWidth w) in
   (x, (canvasHeight w) - flipy)
 
 -- |[makeMark w (x, y)] is a world with [worldMap w] updated to include a
---   mark of color [col $ brush w] and width [sz $ brush w] at pixel (x, y)
-makeMark ::  World -> (Int, Int) -> World
-makeMark w (x, y) =
+--   mark of color [col $ brush w] and shape given by [inShape]
+makeMark ::  World -> ((Int, Int) -> Bool) -> World
+makeMark w inShape =
   let radius = quot (sz . brush $ w) 2 in
     let updateIdx (idx, colr) =
           let (x', y') = pixOfidx idx w in
-            if (pointToPoint (x, y) (x', y') < radius
-                && (dither $ brush w) (x', y'))
+            if inShape (x', y')
+                && (dither $ brush w) (x', y')
             then
-              if (multiply w)
-              then (idx, multMode (col . brush $ w) colr)
-              else (idx, col . brush $ w)
+              case (blend w) of
+                MinMode -> (idx, darkest (col . brush $ w) colr)
+                MaxMode -> (idx, lightest (col . brush $ w) colr)
+                NoMode -> (idx, col . brush $ w)
             else (idx, colr) in
       let newmap = Prelude.map updateIdx (worldMap w) in
         w {worldMap = newmap}
 
-tripleMap :: (a -> b) -> (a, a, a) -> (b, b, b)
-tripleMap f (x, y, z) = (f x, f y, f z)
+-- |[darkest h0 h1] returns whichever hue is darker
+darkest :: Hue -> Hue -> Hue
+darkest (r0, g0, b0) (r1, g1, b1) =
+  if (r0 + g0 + b0) > (r1 + g1 + b1)
+  then (r1, g1, b1)
+  else (r0, g0, b0)
 
--- |[multMode h0 h1] mixes [h0] [h1]
-multMode :: Hue -> Hue -> Hue
-multMode h0 h1 =
-  let (r0', g0', b0') = tripleMap ((\x -> x / 255) . fromIntegral) h0 in
-    let (r1', g1', b1') = tripleMap ((\x -> x / 255) . fromIntegral) h1 in
-      tripleMap (round . (\x -> x * 255)) (r0' * r1', g0' * g1', b0' * b1')
+-- |[lightest h0 h1] returns whichever hue is darker
+lightest :: Hue -> Hue -> Hue
+lightest (r0, g0, b0) (r1, g1, b1) =
+  if (r0 + g0 + b0) < (r1 + g1 + b1)
+  then (r1, g1, b1)
+  else (r0, g0, b0)
 
 -- |[getPix p w] is the pixel of [w] corresponding to mouse position [p]
 getPix :: Point -> World -> Either String (Int, Int)
@@ -88,16 +95,23 @@ stroke pos w =
     case (getPix pos w) of
     Right pix ->
       let updated = updateMarks pix w in
-     makeMark (updated) pix
+        let radius = quot (sz . brush $ w) 2 in
+            makeMark (updated) (\pnt -> pointToPoint pnt pix < radius)
     Left x -> w
 
 -- |[connectStrokes w] is a world where the last two strokes of [w] are visually
 --   connected, if they exist.
 connectStrokes :: World -> World
 connectStrokes w =
+  let radius = quot (sz . brush $ w) 2 in
   case (last4marks w) of
-    p1:p2:t -> fillLine p1 p2 (makeMark (makeMark w p2) p1)
-    p:[] -> makeMark w p
+    p1:p2:t -> let inSegment (x1, y1) (x2, y2) (x0, y0) =
+                     pointToPoint (x0, y0) (x1, y1) < radius
+                     || pointToPoint (x0, y0) (x2, y2) < radius
+                     || (pointToLine (x0, y0) (x1, y1) (x2, y2)  < radius
+                         && inRectangle (x0, y0) (x1, y1) (x2, y2) radius) in
+                 makeMark w (inSegment p1 p2)
+    p:[] -> makeMark w (\pnt -> (pointToPoint p pnt) < radius)
     _ -> w
 
 -- |[pointToLine p0 p1 p2] is the distance between [p0] and the line containing
@@ -133,32 +147,6 @@ inRectangle (x0, y0) (x1, y1) (x2, y2) radius =
              (fromIntegral y2) + (1/a)*fromIntegral x2) in
     (y0' < perp * x0' + b1 && y0' > perp * x0' + b2 ||
      y0' > perp * x0' + b1 && y0' < perp * x0' + b2)
-
-nearLastStrokes :: (Int, Int) -> Int -> World -> Bool
-nearLastStrokes p r w = case (last4marks w) of
-  [] -> False
-  h:t -> (pointToPoint p h < r) && case t of
-     [] -> False
-     h2:t2 -> pointToPoint p h2 < r
-     
--- |[fillLine p1 p2 w] is a world where the marks at points p1 and p2 are
---   visually connected by a straight line.
-fillLine :: (Int, Int) -> (Int, Int) -> World -> World
-fillLine (x1, y1) (x2, y2) w =
-  let radius = quot (sz . brush $ w) 2 in
-    let updateIdx (idx, colr) =
-          let (x0, y0) = pixOfidx idx w in
-            if pointToLine (x0, y0) (x1, y1) (x2, y2)  < radius
-            && inRectangle (x0, y0) (x1, y1) (x2, y2) radius
-            && (dither $ brush w) (x0, y0)
-            then
-              if (multiply w
-                  && not (nearLastStrokes (x0, y0) radius w))  
-              then (idx, multMode (col . brush $ w) colr)
-              else (idx, col . brush $ w)
-            else (idx, colr) in
-      let newmap = Prelude.map updateIdx (worldMap w) in
-        w {worldMap = newmap}
 
 -- |[lineCoefficients p1 p2] is [(a, b}] such that a * x + b = y is the equation
 --   of the line containing points [p1] and [p2].
@@ -261,9 +249,13 @@ handleEvent (EventKey (Char 's') Down _ _) w =
 handleEvent (EventKey (Char 'h') Down _ _) w =
   return (w {worldMap = flipHorizontal (canvasWidth w) (worldMap w)})
 
--- multiply
+-- lineart mode
 handleEvent (EventKey (Char 'm') Down _ _) w =
-  return (w {multiply = not (multiply w)})
+  return (w {blend = MinMode})
+
+-- highlight mode
+handleEvent (EventKey (Char 'n') Down _ _) w =
+  return (w {blend = MaxMode})
 
 -- do nothing for other keys
 handleEvent _ w = return w
@@ -359,7 +351,7 @@ beginDraw wd ht wm st fname =
                      last4marks = [],
                      filename = fname,
                      palette = C.palette st,
-                     multiply = False        
+                     blend = NoMode          
                } in
   playArrayIO
   FullScreen
