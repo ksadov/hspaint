@@ -251,11 +251,15 @@ handleEvent (EventKey (Char 'h') Down _ _) w =
 
 -- lineart mode
 handleEvent (EventKey (Char 'm') Down _ _) w =
-  return (w {blend = MinMode})
+  case (blend w) of
+    MinMode -> return (w {blend = NoMode})
+    _ -> return (w {blend = MinMode})
 
 -- highlight mode
 handleEvent (EventKey (Char 'n') Down _ _) w =
-  return (w {blend = MaxMode})
+  case (blend w) of
+    MaxMode -> return (w {blend = NoMode})
+    _ -> return (w {blend = MaxMode})
 
 -- do nothing for other keys
 handleEvent _ w = return w
