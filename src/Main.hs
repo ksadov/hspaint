@@ -61,11 +61,16 @@ makeMark w (x, y) =
             else (idx, colr) in
       let newmap = Prelude.map updateIdx (worldMap w) in
         w {worldMap = newmap}
-        
--- |[multMode h1 h2] mixes [h1] [h2]
+
+tripleMap :: (a -> b) -> (a, a, a) -> (b, b, b)
+tripleMap f (x, y, z) = (f x, f y, f z)
+
+-- |[multMode h0 h1] mixes [h0] [h1]
 multMode :: Hue -> Hue -> Hue
-multMode (r0, g0, b0) (r1, g1, b1) =
-  (min 255 (r0*r1), min 255 (g0*g1), min 255 (b0*b1))
+multMode h0 h1 =
+  let (r0', g0', b0') = tripleMap ((\x -> x / 255) . fromIntegral) h0 in
+    let (r1', g1', b1') = tripleMap ((\x -> x / 255) . fromIntegral) h1 in
+      tripleMap (round . (\x -> x * 255)) (r0' * r1', g0' * g1', b0' * b1')
 
 -- |[getPix p w] is the pixel of [w] corresponding to mouse position [p]
 getPix :: Point -> World -> Either String (Int, Int)
@@ -129,6 +134,13 @@ inRectangle (x0, y0) (x1, y1) (x2, y2) radius =
     (y0' < perp * x0' + b1 && y0' > perp * x0' + b2 ||
      y0' > perp * x0' + b1 && y0' < perp * x0' + b2)
 
+nearLastStrokes :: (Int, Int) -> Int -> World -> Bool
+nearLastStrokes p r w = case (last4marks w) of
+  [] -> False
+  h:t -> (pointToPoint p h < r) && case t of
+     [] -> False
+     h2:t2 -> pointToPoint p h2 < r
+     
 -- |[fillLine p1 p2 w] is a world where the marks at points p1 and p2 are
 --   visually connected by a straight line.
 fillLine :: (Int, Int) -> (Int, Int) -> World -> World
@@ -140,7 +152,8 @@ fillLine (x1, y1) (x2, y2) w =
             && inRectangle (x0, y0) (x1, y1) (x2, y2) radius
             && (dither $ brush w) (x0, y0)
             then
-              if (multiply w)
+              if (multiply w
+                  && not (nearLastStrokes (x0, y0) radius w))  
               then (idx, multMode (col . brush $ w) colr)
               else (idx, col . brush $ w)
             else (idx, colr) in
